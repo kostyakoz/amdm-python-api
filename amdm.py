@@ -1,13 +1,14 @@
 import re
-import json
 import requests
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup
 
 class AmDm:
     """Класс для поиска аккордов с сайта AmDm.ru
     """
+    def __init__(self):
+        pass
 
-    def get_chords_list(query):
+    def get_chords_list(self, query):
         """Получаем список песен по поиску в формате:
         [
             {
@@ -16,12 +17,15 @@ class AmDm:
                 'url': '...'
             }
         ]
+        Или False если ничего не найдено
         :param query: поисковый запрос
         """
         result = requests.post('http://amdm.ru/search/?q={}'.format(
             re.sub('\s', '+', query)))
-        soup = bs(result.content)
-        table = soup.find_all("table", {"class":"items"})[0]
+        soup = BeautifulSoup(result.content, "lxml")
+        table = soup.find_all("table", "items")[0]
+        if " ".join(table['class']) == "items debug2":
+            return False
         r = table.find_all("a", {"class":"artist"})
 
         results = []
@@ -34,12 +38,12 @@ class AmDm:
             results[index]['url'] = 'http:{}'.format(item['href'])
         return results
 
-    def get_chords_song(url):
+    def get_chords_song(self, url):
         """Получаем аккорды для песни по URL в формате HTML.
         :param url: URL для amdm.ru
         """
         song = requests.get(url)
-        soup = bs(song.content)
+        soup = BeautifulSoup(song.content, "lxml")
         content = soup.find_all("pre", {"itemprop":"chordsBlock"})[0]
         txt = ''
         for item in content.contents:
